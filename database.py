@@ -1,5 +1,6 @@
 import atexit
 import logging
+import os
 import sqlite3
 import sys
 
@@ -21,10 +22,12 @@ class Database:
             self._con.close()
 
     def _get_db_path(self):
-        if sys.platform != 'linux':
-            error_and_exit('This software is meant to be run on Linux')
-
-        return Path('~/.local/share/endfield-pull-tracker').expanduser() / 'db.sqlite3'
+        if sys.platform == 'linux':
+            return Path('~/.local/share/endfield-pull-tracker').expanduser() / 'db.sqlite3'
+        elif sys.platform == 'win32':
+            return Path(os.environ['APPDATA']) / 'endfield-pull-tracker' / 'db.sqlite3'
+        else:
+            error_and_exit('Unsupported platform')
 
     def _try_create_db(self):
         database_path = self._get_db_path()

@@ -7,13 +7,17 @@ import os
 import tempfile
 import time
 import subprocess
+import webbrowser
+
+import bottle
 
 from pathlib import Path
+from threading import Timer
 from urllib.request import urlopen
 from urllib.parse import urlencode
 
 from database import Database
-from util import get_auth_token, CharacterBannerType
+from util import error_and_exit, get_auth_token, CharacterBannerType
 
 
 CHARACTER_API_URL = 'https://ef-webview.gryphline.com/api/record/char'
@@ -41,6 +45,14 @@ def retrieve_pull_data():
                 with urlopen(f'{CHARACTER_API_URL}?{urlencode(query_params)}') as request:
                     result = request.read()
                     json_result = json.loads(result)
+
+                    if json_result['code'] != 0:
+                        if 'msg' in json_result:
+                            error_and_exit('Error received from API: "%s"', json_result['msg'])
+                            break
+                        else:
+                            error_and_exit('Error received from API')
+                            break
 
                     # map pulls as a list of tuples for DB insertion
                     pulls = []
@@ -95,6 +107,14 @@ def retrieve_pull_data():
             with urlopen(f'{WEAPON_API_URL}?{urlencode(query_params)}') as request:
                 result = request.read()
                 json_result = json.loads(result)
+
+                if json_result['code'] != 0:
+                    if 'msg' in json_result:
+                        error_and_exit('Error received from API: "%s"', json_result['msg'])
+                        break
+                    else:
+                        error_and_exit('Error received from API')
+                        break
 
                 # map pulls as a list of tuples for DB insertion
                 pulls = []
@@ -181,6 +201,7 @@ def generate_report():
     js_fp = Path(__file__).with_name('script.js').open('r', encoding='utf-8')
 
     tmp_fd, tmp_path = tempfile.mkstemp('.html', text=True)
+    tmp_path = Path(tmp_path)
     with os.fdopen(tmp_fd, 'w', encoding='utf-8') as tmp_fp:
         tmp_fp.write(
             html_fp.read()
@@ -195,7 +216,21 @@ def generate_report():
     css_fp.close()
     js_fp.close()
 
-    subprocess.run([ 'firefox-developer-edition', tmp_path ])
+    bottle_app = bottle.Bottle()
+    bottle_server = bottle.WSGIRefServer(host='localhost', port=12321)
+
+    def index():
+        return bottle.static_file(tmp_path.name, root=tmp_path.parent, headers={ 'Cache-Control': 'no-store' })
+
+    def shutdown():
+        Timer(0.1, lambda: bottle_server.srv.shutdown()).start()
+        return None
+
+    bottle_app.route('/', callback=index)
+    bottle_app.route('/shutdown', method='POST', callback=shutdown)
+
+    webbrowser.open('http://localhost:12321')
+    bottle.run(bottle_app, server=bottle_server)
 
 
 if __name__ == '__main__':

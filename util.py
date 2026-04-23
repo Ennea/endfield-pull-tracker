@@ -1,5 +1,6 @@
 import logging
 import re
+import os
 import sys
 
 from enum import StrEnum
@@ -17,7 +18,18 @@ def error_and_exit(msg, *args):
     sys.exit(1)
 
 def get_auth_token():
-    cache_path = Path('~/Games/umu/endfield/drive_c/users/steamuser/AppData/Local/PlatformProcess/Cache').expanduser() / 'data_1'
+    if sys.platform == 'linux':
+        try:
+            cache_path = Path(os.environ['LOCALAPPDATA']).expanduser() / 'PlatformProcess' / 'Cache' / 'data_1'
+        except KeyError:
+            error_and_exit('Please set LOCALAPPDATA to point to AppData/Local inside the Wine prefix where Endfield is installed')
+            return
+    elif sys.platform == 'win32':
+        cache_path = Path(os.environ['LOCALAPPDATA']) / 'PlatformProcess' / 'Cache' / 'data_1'
+    else:
+        error_and_exit('Unsupported platform')
+        return
+
     if not cache_path.exists():
         error_and_exit('Cache path "%s" does not exist', cache_path)
 
@@ -30,7 +42,7 @@ def get_auth_token():
         match = m
 
     if match is None:
-        error_and_exit('Could not find auth token')
+        error_and_exit("Could not find auth token, please make sure you've recently opened your pull history ingame")
         return
 
     query_string = match.group(1).decode('utf-8')

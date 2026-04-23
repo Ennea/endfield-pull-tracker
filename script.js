@@ -142,3 +142,5 @@ function BuildVisualization(containerID, data) {
 if (window.devicePixelRatio) {
     document.body.style.setProperty('--noise-size', `${1 / window.devicePixelRatio * 128}px`);
 }
+
+fetch('shutdown', { method: 'POST' });
