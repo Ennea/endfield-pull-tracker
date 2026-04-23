@@ -11,7 +11,7 @@ To grab your pull history, first open the pull history inside the game, then run
 LOCALAPPDATA=path/to/AppData/Local ./endfield-pull-tracker.py
 ```
 
-`LOCALAPPDATA` should point to `AppData/Local` inside the Wine prefix you use for Endfield. Once pulls have been gathered (or updated), you can run the following to generate a report and open it in your default browser:
+`LOCALAPPDATA` should point to `AppData/Local` inside the Wine prefix you use for Endfield (on Windows, just call `endfield-pull-tracker.py` without overwriting `LOCALAPPDATA`). Once pulls have been gathered (or updated), you can run the following to generate a report and open it in your default browser:
 ```sh
 ./endfield-pull-tracker.py generate-report
 ```
